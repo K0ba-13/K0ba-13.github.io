@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mapa Interativo – Sul de Minas</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body, html { margin: 0; padding:0; height:100%; }
+    #map { width:100%; height:100%; }
+    .info {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(255,255,255,0.8);
+      padding: 6px 10px;
+      border-radius: 4px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.3);
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">Passe o mouse</div>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map').setView([-22.3, -45.5], 8);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const info = document.querySelector('.info');
+
+    function style(feature) {
+      return {
+        fillColor: '#6baed6',
+        color: '#FFFFFF',
+        weight: 1,
+        fillOpacity: 0.7
+      };
+    }
+
+    function highlight(e) {
+      const layer = e.target;
+      layer.setStyle({ weight: 2, fillOpacity: 0.9 });
+      info.textContent = layer.feature.properties.name;
+    }
+
+    function resetHighlight(e) {
+      geojson.resetStyle(e.target);
+      info.textContent = 'Passe o mouse';
+    }
+
+    function zoomToFeature(e) {
+      map.fitBounds(e.target.getBounds());
+    }
+
+    function onEachFeature(feature, layer) {
+      layer.on({
+        mouseover: highlight,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+      });
+      layer.bindPopup('<b>' + feature.properties.name + '</b>');
+    }
+
+    let geojson;
+    fetch('sul-de-minas-municipios-full.json')
+      .then(res => res.json())
+      .then(data => {
+        geojson = L.geoJson(data, {
+          style: style,
+          onEachFeature: onEachFeature
+        }).addTo(map);
+        map.fitBounds(geojson.getBounds()); // ZOOM AUTOMÁTICO APÓS CARREGAR O JSON
+      })
+      .catch(err => console.error('Erro carregando o GeoJSON:', err));
+  </script>
+</body>
+</html>
